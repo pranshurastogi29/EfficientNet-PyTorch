@@ -53,29 +53,31 @@ BlockArgs.__new__.__defaults__ = (None,) * len(BlockArgs._fields)
 
 
 # An ordinary implementation of Swish function
-class Swish(nn.Module):
-    def forward(self, x):
-        return x * torch.sigmoid(x)
-
-
-# A memory-efficient implementation of Swish function
-class SwishImplementation(torch.autograd.Function):
+sigmoid = torch.nn.Sigmoid()
+class Swish(torch.autograd.Function):
     @staticmethod
     def forward(ctx, i):
-        result = i * torch.sigmoid(i)
+        result = i * sigmoid(i)
         ctx.save_for_backward(i)
         return result
 
     @staticmethod
     def backward(ctx, grad_output):
-        i = ctx.saved_tensors[0]
-        sigmoid_i = torch.sigmoid(i)
+        i = ctx.saved_variables[0]
+        sigmoid_i = sigmoid(i)
         return grad_output * (sigmoid_i * (1 + i * (1 - sigmoid_i)))
 
-class MemoryEfficientSwish(nn.Module):
-    def forward(self, x):
-        return SwishImplementation.apply(x)
+swish = Swish.apply
 
+class Swish_module(nn.Module):
+    def forward(self, x):
+        return swish(x)
+
+swish_layer = Swish_module()
+def relu_fn(x):
+    """ Swish activation function """
+    # return x * torch.sigmoid(x)
+    return swish_layer(x)
 
 def round_filters(filters, global_params):
     """Calculate and round number of filters based on width multiplier.
